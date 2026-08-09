@@ -1,6 +1,6 @@
 let currentBase64Image = null;
 const conversationHistory = [
-    { role: "system", content: "Du bist Azure, ein hilfreicher KI-Assistent." }
+    { role: "system", content: "Du bist Arnox AI, ein intelligenter, moderner Assistent." }
 ];
 
 const userInput = document.getElementById('user-input');
@@ -23,7 +23,6 @@ userInput.addEventListener('keydown', function(e) {
     }
 });
 
-// Bild-Upload verarbeiten (In Base64 umwandeln)
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -43,12 +42,11 @@ async function sendMessage() {
     const messageText = userInput.value.trim();
 
     if (!apiKey) {
-        alert("Bitte trage zuerst deinen API Key ein!");
+        alert("Bitte trage zuerst deinen OpenAI API Key ein!");
         return;
     }
     if (!messageText && !currentBase64Image) return;
 
-    // Content Array für Vision API aufbauen
     const userContent = [];
     if (messageText) userContent.push({ type: "text", text: messageText });
     if (currentBase64Image) {
@@ -58,21 +56,17 @@ async function sendMessage() {
         });
     }
 
-    // UI anzeigen
     appendMessageUI(messageText, 'user', currentBase64Image);
     
-    // Reset Inputs
     userInput.value = '';
     userInput.style.height = 'auto';
     document.getElementById('image-preview-bar').style.display = 'none';
     currentBase64Image = null;
     sendBtn.classList.remove('active');
 
-    // Verlauf speichern
     conversationHistory.push({ role: "user", content: userContent });
 
-    // Bot Lade-Status
-    const botTextDiv = appendMessageUI('Denkt nach...', 'bot');
+    const botTextDiv = appendMessageUI('Überlegt...', 'bot');
 
     try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -91,7 +85,7 @@ async function sendMessage() {
 
         if (data.choices && data.choices.length > 0) {
             const botReply = data.choices[0].message.content;
-            botTextDiv.innerHTML = marked.parse(botReply); // Render Markdown
+            botTextDiv.innerHTML = marked.parse(botReply);
             conversationHistory.push({ role: "assistant", content: botReply });
         } else {
             botTextDiv.innerText = "Fehler: " + (data.error ? data.error.message : "Unbekannter Fehler");
@@ -130,7 +124,7 @@ function appendMessageUI(text, sender, imageBase64 = null) {
         p.innerText = text;
         textDiv.appendChild(p);
     } else {
-        textDiv.innerHTML = text === 'Denkt nach...' ? '<i>Denkt nach...</i>' : marked.parse(text);
+        textDiv.innerHTML = text === 'Überlegt...' ? '<i>Überlegt...</i>' : marked.parse(text);
     }
 
     content.appendChild(avatar);
