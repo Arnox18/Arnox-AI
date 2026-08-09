@@ -3,60 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure AI</title>
-    <!-- Marked.js für schöne Formatierung (Markdown/Code) -->
+    <title>Arnox AI</title>
+    <!-- Marked.js für Markdown & Code-Highlighting -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            --bg-main: #212121;
-            --bg-sidebar: #171717;
-            --bg-input: #2f2f2f;
-            --bg-msg-user: #2f2f2f;
-            --text-primary: #ececf1;
-            --text-secondary: #b4b4b4;
-            --accent-azure: #0078d4;
-            --border-color: #424242;
+            --bg-dark: #0f172a;
+            --bg-sidebar: #0b0f19;
+            --bg-card: #1e293b;
+            --bg-input: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-purple: #6366f1;
+            --accent-hover: #4f46e5;
+            --border-glow: rgba(99, 102, 241, 0.3);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-primary);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* Sidebar Layout */
+        /* --- Sidebar --- */
         #sidebar {
             width: 260px;
             background-color: var(--bg-sidebar);
             display: flex;
             flex-direction: column;
-            padding: 12px;
-            border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 16px;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .new-chat-btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
+            background: linear-gradient(135deg, var(--accent-purple), #8b5cf6);
+            border: none;
             color: #fff;
-            padding: 10px 14px;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border-radius: 10px;
             cursor: pointer;
-            text-align: left;
-            font-size: 0.9rem;
+            font-weight: 600;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
-            gap: 10px;
-            transition: 0.2s;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
         }
 
-        .new-chat-btn:hover { background-color: #212121; }
+        .new-chat-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
 
-        /* Main Workspace */
+        /* --- Hauptfenster --- */
         #main-chat {
             flex: 1;
             display: flex;
@@ -66,111 +72,156 @@
         }
 
         header {
-            padding: 12px 24px;
+            padding: 16px 28px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
             border-bottom: 1px solid rgba(255,255,255,0.05);
+            z-index: 10;
         }
 
-        header h1 { font-size: 1.1rem; font-weight: 600; }
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
         #api-key-input {
             width: 260px;
-            padding: 8px 12px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
             color: #fff;
             font-size: 0.85rem;
+            outline: none;
+            transition: 0.2s;
         }
 
-        /* Chat Display */
+        #api-key-input:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 8px var(--border-glow);
+        }
+
+        /* --- Chat Verlauf --- */
         #chat-box {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 0 160px 0;
+            padding: 24px 0 170px 0;
+            scroll-behavior: smooth;
         }
 
         .message-row {
-            padding: 18px 24px;
+            padding: 16px 24px;
             display: flex;
             justify-content: center;
         }
 
-        .message-row.user { background-color: transparent; }
-        .message-row.bot { background-color: rgba(255,255,255,0.02); }
+        .message-row.user { background: transparent; }
+        .message-row.bot { background: rgba(30, 41, 59, 0.4); }
 
         .message-content {
-            max-width: 768px;
+            max-width: 800px;
             width: 100%;
             display: flex;
-            gap: 16px;
+            gap: 18px;
         }
 
         .avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 0.9rem;
+            font-weight: 700;
+            font-size: 1rem;
             flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
-        .user .avatar { background-color: #5436da; color: #fff; }
-        .bot .avatar { background-color: var(--accent-azure); color: #fff; }
+        .user .avatar { background: #3b82f6; color: #fff; }
+        .bot .avatar { 
+            background: linear-gradient(135deg, var(--accent-purple), #8b5cf6); 
+            color: #fff; 
+        }
 
         .message-text {
             flex: 1;
-            line-height: 1.6;
+            line-height: 1.65;
             font-size: 0.98rem;
             overflow-x: auto;
+            padding-top: 4px;
         }
 
         .message-text p { margin-bottom: 0.8em; }
         .message-text pre {
-            background: #1e1e1e;
-            padding: 12px;
-            border-radius: 6px;
+            background: #090d16;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
             overflow-x: auto;
-            margin: 10px 0;
+            margin: 12px 0;
         }
-        .message-text code { font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
+        .message-text code { font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; }
 
         .preview-img {
-            max-width: 250px;
-            max-height: 250px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: block;
+            max-width: 280px;
+            max-height: 280px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Input Container */
+        /* --- Schwebendes Eingabefeld --- */
         #input-area {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 20px;
-            background: linear-gradient(180deg, transparent 0%, var(--bg-main) 40%);
+            padding: 24px;
+            background: linear-gradient(180deg, transparent 0%, var(--bg-dark) 50%);
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
+        #image-preview-bar {
+            max-width: 800px;
+            width: 100%;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        #image-preview-bar img {
+            height: 70px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-purple);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
         #input-box {
-            max-width: 768px;
+            max-width: 800px;
             width: 100%;
             background: var(--bg-input);
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
-            padding: 10px 14px;
+            padding: 10px 16px;
             display: flex;
             align-items: flex-end;
-            gap: 10px;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #input-box:focus-within {
+            border-color: var(--accent-purple);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
         }
 
         #user-input {
@@ -180,7 +231,7 @@
             color: #fff;
             font-size: 1rem;
             resize: none;
-            max-height: 150px;
+            max-height: 160px;
             outline: none;
             font-family: inherit;
         }
@@ -188,59 +239,55 @@
         .upload-btn {
             background: transparent;
             border: none;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             cursor: pointer;
-            padding: 6px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .upload-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-
-        #send-btn {
-            background: var(--border-color);
-            border: none;
-            color: var(--bg-main);
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: 0.2s;
         }
 
+        .upload-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+        #send-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
         #send-btn.active {
-            background: #fff;
-            color: #000;
+            background: var(--accent-purple);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
         }
 
-        #image-preview-bar {
-            max-width: 768px;
-            width: 100%;
-            margin-bottom: 8px;
-            display: none;
-        }
-
-        #image-preview-bar img {
-            height: 60px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
+        /* Scrollbar Design */
+        #chat-box::-webkit-scrollbar { width: 6px; }
+        #chat-box::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
     </style>
 </head>
 <body>
 
     <div id="sidebar">
-        <button class="new-chat-btn" onclick="location.reload()">+ Neuer Chat</button>
+        <button class="new-chat-btn" onclick="location.reload()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Neuer Chat
+        </button>
     </div>
 
     <div id="main-chat">
         <header>
-            <h1>Azure AI</h1>
+            <h1>Arnox AI</h1>
             <input type="password" id="api-key-input" placeholder="OpenAI API Key (sk-...)">
         </header>
 
@@ -248,7 +295,7 @@
             <div class="message-row bot">
                 <div class="message-content">
                     <div class="avatar">A</div>
-                    <div class="message-text">Hallo! Ich bin Azure. Wie kann ich dir heute helfen?</div>
+                    <div class="message-text">Willkommen! Ich bin <b>Arnox AI</b>. Wie kann ich dir heute weiterhelfen?</div>
                 </div>
             </div>
         </div>
@@ -259,18 +306,16 @@
             </div>
 
             <div id="input-box">
-                <!-- Versteckter File Upload -->
                 <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
                 
-                <!-- Plus Button -->
-                <button class="upload-btn" onclick="document.getElementById('file-input').click()" title="Bild hochladen">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <button class="upload-btn" onclick="document.getElementById('file-input').click()" title="Bild anhängen">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                 </button>
 
-                <textarea id="user-input" rows="1" placeholder="Nachricht an Azure..."></textarea>
+                <textarea id="user-input" rows="1" placeholder="Nachricht an Arnox AI..."></textarea>
 
                 <button id="send-btn" onclick="sendMessage()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                 </button>
             </div>
         </div>
