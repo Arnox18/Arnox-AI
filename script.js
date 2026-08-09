@@ -1,19 +1,21 @@
+let currentBase64Image = null;
+const conversationHistory = [
+    { role: "system", content: "Du bist Azure, ein hilfreicher KI-Assistent." }
+];
+
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
-// Auto-Resize für das Eingabefeld & Button-Aktivierung
 userInput.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = (this.scrollHeight) + 'px';
-    
-    if (this.value.trim().length > 0) {
+    if (this.value.trim().length > 0 || currentBase64Image) {
         sendBtn.classList.add('active');
     } else {
         sendBtn.classList.remove('active');
     }
 });
 
-// Senden mit 'Enter' (Shift + Enter für eine neue Zeile)
 userInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -21,28 +23,56 @@ userInput.addEventListener('keydown', function(e) {
     }
 });
 
-// Nachrichten-Hauptfunktion
+// Bild-Upload verarbeiten (In Base64 umwandeln)
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        currentBase64Image = e.target.result;
+        document.getElementById('uploaded-img-preview').src = currentBase64Image;
+        document.getElementById('image-preview-bar').style.display = 'block';
+        sendBtn.classList.add('active');
+    };
+    reader.readAsDataURL(file);
+}
+
 async function sendMessage() {
     const apiKey = document.getElementById('api-key-input').value.trim();
-    const inputField = document.getElementById('user-input');
-    const messageText = inputField.value.trim();
+    const messageText = userInput.value.trim();
 
     if (!apiKey) {
-        alert("Bitte trage zuerst deinen OpenAI API Key ein!");
+        alert("Bitte trage zuerst deinen API Key ein!");
         return;
     }
-    if (!messageText) return;
+    if (!messageText && !currentBase64Image) return;
 
-    // User-Nachricht im Chat anzeigen
-    appendMessage(messageText, 'user');
+    // Content Array für Vision API aufbauen
+    const userContent = [];
+    if (messageText) userContent.push({ type: "text", text: messageText });
+    if (currentBase64Image) {
+        userContent.push({
+            type: "image_url",
+            image_url: { url: currentBase64Image }
+        });
+    }
+
+    // UI anzeigen
+    appendMessageUI(messageText, 'user', currentBase64Image);
     
-    // Eingabefeld zurücksetzen
-    inputField.value = '';
-    inputField.style.height = 'auto';
+    // Reset Inputs
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    document.getElementById('image-preview-bar').style.display = 'none';
+    currentBase64Image = null;
     sendBtn.classList.remove('active');
 
-    // Bot-Ladeanzeige
-    const botMsgDiv = appendMessage('<span class="typing-indicator">Überlegt...</span>', 'bot');
+    // Verlauf speichern
+    conversationHistory.push({ role: "user", content: userContent });
+
+    // Bot Lade-Status
+    const botTextDiv = appendMessageUI('Denkt nach...', 'bot');
 
     try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -53,60 +83,66 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 model: 'gpt-4o-mini',
-                messages: [{ role: 'user', content: messageText }]
+                messages: conversationHistory
             })
         });
 
         const data = await response.json();
-        
+
         if (data.choices && data.choices.length > 0) {
-            botMsgDiv.innerText = data.choices[0].message.content;
+            const botReply = data.choices[0].message.content;
+            botTextDiv.innerHTML = marked.parse(botReply); // Render Markdown
+            conversationHistory.push({ role: "assistant", content: botReply });
         } else {
-            botMsgDiv.innerText = "Fehler: " + (data.error ? data.error.message : "Unbekannter Fehler");
+            botTextDiv.innerText = "Fehler: " + (data.error ? data.error.message : "Unbekannter Fehler");
         }
-    } catch (error) {
-        botMsgDiv.innerText = "Netzwerkfehler: " + error.message;
+    } catch (err) {
+        botTextDiv.innerText = "Netzwerkfehler: " + err.message;
     }
-    
+
     scrollToBottom();
 }
 
-// Nachrichtenelement im ChatGPT-Stil erstellen
-function appendMessage(text, sender) {
+function appendMessageUI(text, sender, imageBase64 = null) {
     const chatBox = document.getElementById('chat-box');
-    
-    const msgRow = document.createElement('div');
-    msgRow.classList.add('message-row', sender);
+    const row = document.createElement('div');
+    row.classList.add('message-row', sender);
 
-    const msgContent = document.createElement('div');
-    msgContent.classList.add('message-content');
+    const content = document.createElement('div');
+    content.classList.add('message-content');
 
     const avatar = document.createElement('div');
     avatar.classList.add('avatar');
-    avatar.innerText = sender === 'user' ? 'U' : 'D';
+    avatar.innerText = sender === 'user' ? 'U' : 'A';
 
-    const msgText = document.createElement('div');
-    msgText.classList.add('message-text');
-    
-    if (text.includes('typing-indicator')) {
-        msgText.innerHTML = text;
-    } else {
-        msgText.innerText = text;
+    const textDiv = document.createElement('div');
+    textDiv.classList.add('message-text');
+
+    if (imageBase64) {
+        const img = document.createElement('img');
+        img.src = imageBase64;
+        img.classList.add('preview-img');
+        textDiv.appendChild(img);
     }
 
-    msgContent.appendChild(avatar);
-    msgContent.appendChild(msgText);
-    msgRow.appendChild(msgContent);
-    chatBox.appendChild(msgRow);
-    
+    if (sender === 'user') {
+        const p = document.createElement('p');
+        p.innerText = text;
+        textDiv.appendChild(p);
+    } else {
+        textDiv.innerHTML = text === 'Denkt nach...' ? '<i>Denkt nach...</i>' : marked.parse(text);
+    }
+
+    content.appendChild(avatar);
+    content.appendChild(textDiv);
+    row.appendChild(content);
+    chatBox.appendChild(row);
+
     scrollToBottom();
-    return msgText;
+    return textDiv;
 }
 
 function scrollToBottom() {
     const chatBox = document.getElementById('chat-box');
     chatBox.scrollTop = chatBox.scrollHeight;
 }
-
-// Beim Laden der Seite direkt nach unten scrollen
-scrollToBottom();
