@@ -2,36 +2,62 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>dqarnox-ai</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure AI</title>
+    <!-- Marked.js für schöne Formatierung (Markdown/Code) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* --- Basis Styles & CSS Variablen (ChatGPT Style Palette) --- */
         :root {
-            --bg-color: #343541; /* ChatGPT dunkler Hintergrund */
-            --chat-bg: #343541;
-            --user-msg-bg: #343541; /* User Nachricht gleicher Hintergrund */
-            --bot-msg-bg: #444654;  /* Bot Nachricht leicht abgesetzt */
-            --text-color: #ececf1;
-            --input-bg: #40414f;
-            --input-border: rgba(32,33,35,.5);
-            --sidebar-width: 260px; /* Platzhalter für später */
-            --font-family: Sone, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+            --bg-main: #212121;
+            --bg-sidebar: #171717;
+            --bg-input: #2f2f2f;
+            --bg-msg-user: #2f2f2f;
+            --text-primary: #ececf1;
+            --text-secondary: #b4b4b4;
+            --accent-azure: #0078d4;
+            --border-color: #424242;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: var(--font-family);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* --- Main Chat Area --- */
-        #main-container {
+        /* Sidebar Layout */
+        #sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .new-chat-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+
+        .new-chat-btn:hover { background-color: #212121; }
+
+        /* Main Workspace */
+        #main-chat {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -39,376 +65,217 @@
             position: relative;
         }
 
-        /* --- API Key & Header (oben fixiert) --- */
-        #header-settings {
-            padding: 10px 20px;
-            background: rgba(52, 53, 65, 0.95);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+        header {
+            padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        #header-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 0;
-        }
+        header h1 { font-size: 1.1rem; font-weight: 600; }
 
         #api-key-input {
-            width: 250px;
+            width: 260px;
             padding: 8px 12px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--input-border);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            color: var(--text-color);
+            color: #fff;
             font-size: 0.85rem;
-            transition: border-color 0.2s;
         }
 
-        #api-key-input:focus {
-            outline: none;
-            border-color: #10a37f; /* OpenAI Grün */
-        }
-
-        /* --- Chat Verlauf --- */
+        /* Chat Display */
         #chat-box {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 150px; /* Platz für Eingabefeld unten */
-            scroll-behavior: smooth;
+            padding: 20px 0 160px 0;
         }
 
-        /* --- Nachricht Style --- */
         .message-row {
-            width: 100%;
-            display: flex;
-            padding: 24px 20px; /* Mehr Padding wie ChatGPT */
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .message-row.user {
-            background-color: var(--user-msg-bg);
-        }
-
-        .message-row.bot {
-            background-color: var(--bot-msg-bg);
-        }
-
-        /* Container für Avatar + Text */
-        .message-content {
-            max-width: 800px; /* Text nicht zu breit werden lassen */
-            margin: 0 auto;
-            display: flex;
-            gap: 1.5rem;
-            width: 100%;
-            align-items: flex-start;
-        }
-
-        /* Avatare */
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 4px;
+            padding: 18px 24px;
             display: flex;
             justify-content: center;
+        }
+
+        .message-row.user { background-color: transparent; }
+        .message-row.bot { background-color: rgba(255,255,255,0.02); }
+
+        .message-content {
+            max-width: 768px;
+            width: 100%;
+            display: flex;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
             align-items: center;
+            justify-content: center;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             flex-shrink: 0;
         }
 
-        .user .avatar {
-            background-color: #ab68ff; /* User Farbe */
-            color: white;
-        }
-
-        .bot .avatar {
-            background-color: #10a37f; /* OpenAI Bot Grün */
-            color: white;
-        }
+        .user .avatar { background-color: #5436da; color: #fff; }
+        .bot .avatar { background-color: var(--accent-azure); color: #fff; }
 
         .message-text {
             flex: 1;
             line-height: 1.6;
-            font-size: 1rem;
-            white-space: pre-wrap; /* Wichtig für Zeilenumbrüche */
-            margin-top: 2px;
+            font-size: 0.98rem;
+            overflow-x: auto;
         }
 
-        /* Lade-Animation */
-        .typing-indicator {
-            font-style: italic;
-            color: #8e8ea0;
+        .message-text p { margin-bottom: 0.8em; }
+        .message-text pre {
+            background: #1e1e1e;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .message-text code { font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
+
+        .preview-img {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: block;
         }
 
-        /* --- Eingabebereich (unten schwebend) --- */
+        /* Input Container */
         #input-area {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             padding: 20px;
-            background: linear-gradient(180deg, rgba(54,55,65,0) 0%, rgba(54,55,65,1) 50%); /* Verlauf */
+            background: linear-gradient(180deg, transparent 0%, var(--bg-main) 40%);
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
         }
 
-        #input-container {
-            max-width: 800px;
+        #input-box {
+            max-width: 768px;
             width: 100%;
-            position: relative;
-            background-color: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 10px 14px;
             display: flex;
-            align-items: center;
-            padding: 5px 10px;
+            align-items: flex-end;
+            gap: 10px;
         }
 
         #user-input {
             flex: 1;
             background: transparent;
             border: none;
-            color: var(--text-color);
+            color: #fff;
             font-size: 1rem;
-            padding: 14px;
-            resize: none; /* Verhindert manuelles Resizen */
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: var(--font-family);
-        }
-
-        #user-input:focus {
+            resize: none;
+            max-height: 150px;
             outline: none;
+            font-family: inherit;
         }
 
-        #send-btn {
+        .upload-btn {
             background: transparent;
             border: none;
-            color: #8e8ea0;
+            color: var(--text-secondary);
             cursor: pointer;
-            padding: 10px;
-            border-radius: 8px;
-            transition: background-color 0.2s, color 0.2s;
+            padding: 6px;
+            border-radius: 50%;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
         }
 
-        #send-btn:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: var(--text-color);
+        .upload-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        #send-btn {
+            background: var(--border-color);
+            border: none;
+            color: var(--bg-main);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
         }
 
-        /* Aktiver Senden Button (wenn Text drin ist) */
         #send-btn.active {
-            background-color: #10a37f;
-            color: white;
+            background: #fff;
+            color: #000;
         }
 
-        /* Icon Style */
-        #send-btn svg {
-            width: 20px;
-            height: 20px;
+        #image-preview-bar {
+            max-width: 768px;
+            width: 100%;
+            margin-bottom: 8px;
+            display: none;
         }
 
-        /* --- Scrollbar Styling (Webkit) --- */
-        #chat-box::-webkit-scrollbar {
-            width: 8px;
+        #image-preview-bar img {
+            height: 60px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
         }
-        #chat-box::-webkit-scrollbar-track {
-            background: var(--chat-bg);
-        }
-        #chat-box::-webkit-scrollbar-thumb {
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 4px;
-        }
-
-        /* --- Mobile Anpassungen --- */
-        @media (max-width: 600px) {
-            #api-key-input { width: 150px; }
-            .message-row { padding: 16px 10px; }
-            .message-content { gap: 1rem; }
-            .avatar { width: 30px; height: 30px; font-size: 1rem; }
-            #input-area { padding: 10px; }
-        }
-
     </style>
 </head>
 <body>
 
-    <!-- Linke Sidebar (Platzhalter für später, aktuell ausgeblendet) -->
-    <!-- <div id="sidebar"></div> -->
+    <div id="sidebar">
+        <button class="new-chat-btn" onclick="location.reload()">+ Neuer Chat</button>
+    </div>
 
-    <!-- Haupt-Chat-Bereich -->
-    <div id="main-container">
-
-        <!-- Header mit API Key Feld -->
-        <header id="header-settings">
-            <h1 id="header-title">dqarnox-ai</h1>
+    <div id="main-chat">
+        <header>
+            <h1>Azure AI</h1>
             <input type="password" id="api-key-input" placeholder="OpenAI API Key (sk-...)">
         </header>
 
-        <!-- Chat Verlauf -->
         <div id="chat-box">
-            <!-- Beispiel-Willkommensnachricht (optional) -->
             <div class="message-row bot">
                 <div class="message-content">
-                    <div class="avatar">D</div>
-                    <div class="message-text">Hallo! Ich bin dqarnox-ai. Wie kann ich dir heute helfen? (Vergiss nicht, oben deinen API Key einzutragen).</div>
+                    <div class="avatar">A</div>
+                    <div class="message-text">Hallo! Ich bin Azure. Wie kann ich dir heute helfen?</div>
                 </div>
             </div>
         </div>
 
-        <!-- Eingabebereich unten -->
         <div id="input-area">
-            <div id="input-container">
-                <!-- Textarea statt Input für mehrzeilige Eingaben -->
-                <textarea id="user-input" placeholder="Nachricht senden..." rows="1"></textarea>
+            <div id="image-preview-bar">
+                <img id="uploaded-img-preview" src="" alt="Preview">
+            </div>
+
+            <div id="input-box">
+                <!-- Versteckter File Upload -->
+                <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                
+                <!-- Plus Button -->
+                <button class="upload-btn" onclick="document.getElementById('file-input').click()" title="Bild hochladen">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+
+                <textarea id="user-input" rows="1" placeholder="Nachricht an Azure..."></textarea>
+
                 <button id="send-btn" onclick="sendMessage()">
-                    <!-- Senden Icon (SVG) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 1L1 8l4.5 1.5L13 3l-6 8 1.5 4.5L15 1z"/>
-                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                 </button>
             </div>
         </div>
-
     </div>
 
-    <!-- WICHTIG: Wir brauchen auch ein kleines Update für die script.js, -->
-    <!-- damit das neue Textarea-Feld und das automatische Scrollen funktioniert. -->
-    <script>
-        // --- Kleine Skript-Anpassungen für das neue UI ---
-
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-
-        // 1. Auto-Resize der Textarea
-        userInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-            
-            // Button Farbe ändern, wenn Text da ist
-            if (this.value.trim().length > 0) {
-                sendBtn.classList.add('active');
-            } else {
-                sendBtn.classList.remove('active');
-            }
-        });
-
-        // 2. Senden mit 'Enter' (aber Shift+Enter für neue Zeile)
-        userInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault(); // Verhindert neue Zeile
-                sendMessage();
-            }
-        });
-
-        // --- Die Kern-Funktion (leicht angepasst für das neue HTML Layout) ---
-        async function sendMessage() {
-            const apiKey = document.getElementById('api-key-input').value.trim();
-            const inputField = document.getElementById('user-input');
-            const messageText = inputField.value.trim();
-            const chatBox = document.getElementById('chat-box');
-
-            if (!apiKey) {
-                alert("Bitte trage zuerst deinen OpenAI API Key ein!");
-                return;
-            }
-            if (!messageText) return;
-
-            // 1. User Nachricht anzeigen
-            appendMessage(messageText, 'user');
-            
-            // Input zurücksetzen & Button deaktivieren
-            inputField.value = '';
-            inputField.style.height = 'auto'; // Reset height
-            sendBtn.classList.remove('active');
-
-            // 2. Bot Platzhalter mit Lade-Animation anzeigen
-            const botMsgDiv = appendMessage('<span class="typing-indicator">Überlegt...</span>', 'bot');
-
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4o-mini',
-                        messages: [{ role: 'user', content: messageText }]
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (data.choices && data.choices.length > 0) {
-                    // Antwort setzen
-                    botMsgDiv.innerText = data.choices[0].message.content;
-                } else {
-                    botMsgDiv.innerText = "Fehler: " + (data.error ? data.error.message : "Unbekannter Fehler");
-                }
-            } catch (error) {
-                botMsgDiv.innerText = "Netzwerkfehler: " + error.message;
-            }
-            
-            // Immer nach unten scrollen
-            scrollToBottom();
-        }
-
-        // --- Nachricht zum Chat-Fenster hinzufügen (Neues Layout) ---
-        function appendMessage(text, sender) {
-            const chatBox = document.getElementById('chat-box');
-            
-            // Row Container
-            const msgRow = document.createElement('div');
-            msgRow.classList.add('message-row', sender);
-
-            // Content Container
-            const msgContent = document.createElement('div');
-            msgContent.classList.add('message-content');
-
-            // Avatar
-            const avatar = document.createElement('div');
-            avatar.classList.add('avatar');
-            avatar.innerText = sender === 'user' ? 'U' : 'D'; // 'U' für User, 'D' für dqarnox
-
-            // Text
-            const msgText = document.createElement('div');
-            msgText.classList.add('message-text');
-            // Nutze innerHTML für den 'Überlegt...' Platzhalter, sonst innerText
-            if (text.includes('typing-indicator')) {
-                msgText.innerHTML = text;
-            } else {
-                msgText.innerText = text;
-            }
-
-            // Zusammenbauen
-            msgContent.appendChild(avatar);
-            msgContent.appendChild(msgText);
-            msgRow.appendChild(msgContent);
-            chatBox.appendChild(msgRow);
-            
-            // Nach unten scrollen
-            scrollToBottom();
-            
-            return msgText; // Gebe das Text-Div zurück, um es später zu aktualisieren
-        }
-
-        function scrollToBottom() {
-            const chatBox = document.getElementById('chat-box');
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        // Initiales Scrollen (falls Willkommensnachricht da ist)
-        scrollToBottom();
-
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
-<script src="script.js"></script>
