@@ -1,152 +1,124 @@
-let currentBase64Image = null;
-const conversationHistory = [
-    { role: "system", content: "Du bist Arnox AI, ein intelligenter, hilfsbereiter KI-Assistent." }
-];
+let uploadedImageBase64 = null;
 
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
+function setPrompt(promptText) {
+    document.getElementById('user-input').value = promptText;
+    document.getElementById('send-btn').classList.add('active');
+}
 
-userInput.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = (this.scrollHeight) + 'px';
-    if (this.value.trim().length > 0 || currentBase64Image) {
+document.getElementById('user-input')?.addEventListener('input', function() {
+    const sendBtn = document.getElementById('send-btn');
+    if (this.value.trim().length > 0 || uploadedImageBase64) {
         sendBtn.classList.add('active');
     } else {
         sendBtn.classList.remove('active');
     }
 });
 
-userInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
-function setPrompt(text) {
-    userInput.value = text;
-    userInput.dispatchEvent(new Event('input'));
-    userInput.focus();
-}
-
 function handleFileSelect(event) {
     const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        currentBase64Image = e.target.result;
-        document.getElementById('uploaded-img-preview').src = currentBase64Image;
-        document.getElementById('image-preview-bar').style.display = 'block';
-        sendBtn.classList.add('active');
-    };
-    reader.readAsDataURL(file);
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImageBase64 = e.target.result;
+            document.getElementById('uploaded-img-preview').src = uploadedImageBase64;
+            document.getElementById('image-preview-bar').style.display = 'block';
+            document.getElementById('send-btn').classList.add('active');
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
 async function sendMessage() {
-    const apiKey = document.getElementById('api-key-input').value.trim();
-    const messageText = userInput.value.trim();
+    const inputField = document.getElementById('user-input');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const chatBox = document.getElementById('chat-box');
+    const heroWelcome = document.getElementById('hero-welcome');
+
+    const userText = inputField.value.trim();
+    const apiKey = apiKeyInput.value.trim();
+
+    if (!userText && !uploadedImageBase64) return;
 
     if (!apiKey) {
-        alert("Bitte trage zuerst deinen OpenAI API Key ein!");
+        alert("Bitte trage oben rechts deinen kostenlosen Groq API-Key ein (gsk_...)!");
         return;
     }
-    if (!messageText && !currentBase64Image) return;
 
-    // Startbildschirm ausblenden, falls vorhanden
-    const hero = document.getElementById('hero-welcome');
-    if (hero) hero.remove();
-
-    const userContent = [];
-    if (messageText) userContent.push({ type: "text", text: messageText });
-    if (currentBase64Image) {
-        userContent.push({
-            type: "image_url",
-            image_url: { url: currentBase64Image }
-        });
+    // Hero-Bereich ausblenden beim ersten Senden
+    if (heroWelcome) {
+        heroWelcome.style.display = 'none';
     }
 
-    appendMessageUI(messageText, 'user', currentBase64Image);
+    // Usereingabe im Chat anzeigen
+    const userMessageRow = document.createElement('div');
+    userMessageRow.className = 'message-row user';
     
-    userInput.value = '';
-    userInput.style.height = 'auto';
+    let imageHTML = uploadedImageBase64 ? `<img src="${uploadedImageBase64}" class="preview-img"><br>` : '';
+    userMessageRow.innerHTML = `
+        <div class="message-content">
+            <div class="avatar">U</div>
+            <div class="message-text">${imageHTML}${escapeHTML(userText)}</div>
+        </div>
+    `;
+    chatBox.appendChild(userMessageRow);
+
+    // Eingabe zurücksetzen
+    inputField.value = '';
     document.getElementById('image-preview-bar').style.display = 'none';
-    currentBase64Image = null;
-    sendBtn.classList.remove('active');
+    document.getElementById('send-btn').classList.remove('active');
+    
+    // Bot-Antwort Container erstellen (mit Lade-Indikator)
+    const botMessageRow = document.createElement('div');
+    botMessageRow.className = 'message-row bot';
+    botMessageRow.innerHTML = `
+        <div class="message-content">
+            <div class="avatar">A</div>
+            <div class="message-text" id="loading-text"><i>Arnox AI denkt nach...</i></div>
+        </div>
+    `;
+    chatBox.appendChild(botMessageRow);
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-    conversationHistory.push({ role: "user", content: userContent });
-
-    const botTextDiv = appendMessageUI('Überlegt...', 'bot');
+    const botTextElement = botMessageRow.querySelector('.message-text');
 
     try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Groq API Endpoint (Nutzt das Llama 3.3 70B Modell)
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: conversationHistory
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: 'Du bist Arnox AI, ein hilfreicher, intelligenter Assistent.' },
+                    { role: 'user', content: userText }
+                ],
+                temperature: 0.7
             })
         });
 
         const data = await response.json();
 
-        if (data.choices && data.choices.length > 0) {
-            const botReply = data.choices[0].message.content;
-            botTextDiv.innerHTML = marked.parse(botReply);
-            conversationHistory.push({ role: "assistant", content: botReply });
+        if (data.choices && data.choices[0]) {
+            const aiResponse = data.choices[0].message.content;
+            botTextElement.innerHTML = marked.parse(aiResponse);
+        } else if (data.error) {
+            botTextElement.innerHTML = `<span style="color: #ef4444;"><strong>Groq API Fehler:</strong> ${data.error.message}</span>`;
         } else {
-            botTextDiv.innerText = "Fehler: " + (data.error ? data.error.message : "Unbekannter Fehler");
+            botTextElement.innerHTML = `<span style="color: #ef4444;">Fehler beim Empfangen der Antwort.</span>`;
         }
     } catch (err) {
-        botTextDiv.innerText = "Netzwerkfehler: " + err.message;
+        botTextElement.innerHTML = `<span style="color: #ef4444;">Netzwerkfehler: Bitte überprüfe deinen API-Key und deine Verbindung.</span>`;
     }
 
-    scrollToBottom();
-}
-
-function appendMessageUI(text, sender, imageBase64 = null) {
-    const chatBox = document.getElementById('chat-box');
-    const row = document.createElement('div');
-    row.classList.add('message-row', sender);
-
-    const content = document.createElement('div');
-    content.classList.add('message-content');
-
-    const avatar = document.createElement('div');
-    avatar.classList.add('avatar');
-    avatar.innerText = sender === 'user' ? 'U' : 'A';
-
-    const textDiv = document.createElement('div');
-    textDiv.classList.add('message-text');
-
-    if (imageBase64) {
-        const img = document.createElement('img');
-        img.src = imageBase64;
-        img.classList.add('preview-img');
-        textDiv.appendChild(img);
-    }
-
-    if (sender === 'user') {
-        const p = document.createElement('p');
-        p.innerText = text;
-        textDiv.appendChild(p);
-    } else {
-        textDiv.innerHTML = text === 'Überlegt...' ? '<i>Überlegt...</i>' : marked.parse(text);
-    }
-
-    content.appendChild(avatar);
-    content.appendChild(textDiv);
-    row.appendChild(content);
-    chatBox.appendChild(row);
-
-    scrollToBottom();
-    return textDiv;
-}
-
-function scrollToBottom() {
-    const chatBox = document.getElementById('chat-box');
+    uploadedImageBase64 = null;
     chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
 }
