@@ -167,11 +167,6 @@
             outline: none;
         }
 
-        #api-key-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
         /* --- Workspace Area --- */
         #chat-box {
             flex: 1;
@@ -205,7 +200,6 @@
             margin-bottom: 36px;
         }
 
-        /* 4er Card Grid breiter skaliert */
         .suggestions-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -356,6 +350,19 @@
             color: #fff;
             box-shadow: 0 0 12px var(--accent-glow);
         }
+
+        #image-preview-bar {
+            display: none;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        #uploaded-img-preview {
+            max-height: 60px;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -433,22 +440,28 @@
         </div>
 
         <div id="input-container">
-            <div id="input-box">
-                <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
-                
-                <button class="icon-btn" onclick="document.getElementById('file-input').click()" title="Bild anhängen">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                </button>
+            <div style="width: 100%; max-width: 950px; display: flex; flex-direction: column;">
+                <div id="image-preview-bar">
+                    <img id="uploaded-img-preview" src="" alt="Vorschau">
+                </div>
+                <div id="input-box">
+                    <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                    
+                    <button class="icon-btn" onclick="document.getElementById('file-input').click()" title="Bild anhängen">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
 
-                <textarea id="user-input" rows="1" placeholder="Nachricht an Arnox AI..."></textarea>
+                    <textarea id="user-input" rows="1" placeholder="Nachricht an Arnox AI..."></textarea>
 
-                <button id="send-btn" onclick="sendMessage()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                </button>
+                    <button id="send-btn" onclick="sendMessage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Script ganz unten vor </body> einbinden -->
     <script src="script.js"></script>
 </body>
 </html>
