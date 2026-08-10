@@ -1,7 +1,28 @@
 let uploadedImageBase64 = null;
 
-// Key automatisch laden, falls schon mal eingegeben
+// Event-Listener sicher nach dem Laden der DOM einbinden
 document.addEventListener('DOMContentLoaded', () => {
+    // Event-Listener für Enter-Taste im Textfeld
+    const inputField = document.getElementById('user-input');
+    if (inputField) {
+        inputField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // Verhindert eine neue Zeile
+                sendMessage();
+            }
+        });
+
+        inputField.addEventListener('input', function() {
+            const sendBtn = document.getElementById('send-btn');
+            if (this.value.trim().length > 0 || uploadedImageBase64) {
+                sendBtn?.classList.add('active');
+            } else {
+                sendBtn?.classList.remove('active');
+            }
+        });
+    }
+
+    // Gespeicherten Key automatisch auslesen
     const savedKey = localStorage.getItem('groq_api_key');
     if (savedKey) {
         const apiKeyInput = document.getElementById('api-key-input');
@@ -16,15 +37,6 @@ function setPrompt(promptText) {
         document.getElementById('send-btn')?.classList.add('active');
     }
 }
-
-document.getElementById('user-input')?.addEventListener('input', function() {
-    const sendBtn = document.getElementById('send-btn');
-    if (this.value.trim().length > 0 || uploadedImageBase64) {
-        sendBtn?.classList.add('active');
-    } else {
-        sendBtn?.classList.remove('active');
-    }
-});
 
 function handleFileSelect(event) {
     const file = event.target.files[0];
@@ -58,7 +70,7 @@ async function sendMessage() {
         return;
     }
 
-    // Key im Browser-Speicher sichern
+    // Key lokal im Browser merken
     localStorage.setItem('groq_api_key', apiKey);
 
     if (heroWelcome) {
@@ -78,7 +90,7 @@ async function sendMessage() {
     `;
     chatBox.appendChild(userMessageRow);
 
-    // Eingabe zurücksetzen
+    // Eingabefeld leeren
     inputField.value = '';
     const previewBar = document.getElementById('image-preview-bar');
     if (previewBar) previewBar.style.display = 'none';
