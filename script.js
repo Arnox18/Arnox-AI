@@ -1,16 +1,28 @@
 let uploadedImageBase64 = null;
 
+// Key automatisch laden, falls schon mal eingegeben
+document.addEventListener('DOMContentLoaded', () => {
+    const savedKey = localStorage.getItem('groq_api_key');
+    if (savedKey) {
+        const apiKeyInput = document.getElementById('api-key-input');
+        if (apiKeyInput) apiKeyInput.value = savedKey;
+    }
+});
+
 function setPrompt(promptText) {
-    document.getElementById('user-input').value = promptText;
-    document.getElementById('send-btn').classList.add('active');
+    const inputField = document.getElementById('user-input');
+    if (inputField) {
+        inputField.value = promptText;
+        document.getElementById('send-btn')?.classList.add('active');
+    }
 }
 
 document.getElementById('user-input')?.addEventListener('input', function() {
     const sendBtn = document.getElementById('send-btn');
     if (this.value.trim().length > 0 || uploadedImageBase64) {
-        sendBtn.classList.add('active');
+        sendBtn?.classList.add('active');
     } else {
-        sendBtn.classList.remove('active');
+        sendBtn?.classList.remove('active');
     }
 });
 
@@ -20,9 +32,11 @@ function handleFileSelect(event) {
         const reader = new FileReader();
         reader.onload = function(e) {
             uploadedImageBase64 = e.target.result;
-            document.getElementById('uploaded-img-preview').src = uploadedImageBase64;
-            document.getElementById('image-preview-bar').style.display = 'block';
-            document.getElementById('send-btn').classList.add('active');
+            const previewImg = document.getElementById('uploaded-img-preview');
+            const previewBar = document.getElementById('image-preview-bar');
+            if (previewImg) previewImg.src = uploadedImageBase64;
+            if (previewBar) previewBar.style.display = 'block';
+            document.getElementById('send-btn')?.classList.add('active');
         };
         reader.readAsDataURL(file);
     }
@@ -40,20 +54,22 @@ async function sendMessage() {
     if (!userText && !uploadedImageBase64) return;
 
     if (!apiKey) {
-        alert("Bitte trage oben rechts deinen kostenlosen Groq API-Key ein (gsk_...)!");
+        alert("Bitte trage oben rechts deinen Groq API-Key ein!");
         return;
     }
 
-    // Hero-Bereich ausblenden beim ersten Senden
+    // Key im Browser-Speicher sichern
+    localStorage.setItem('groq_api_key', apiKey);
+
     if (heroWelcome) {
         heroWelcome.style.display = 'none';
     }
 
-    // Usereingabe im Chat anzeigen
+    // User Message anzeigen
     const userMessageRow = document.createElement('div');
     userMessageRow.className = 'message-row user';
     
-    let imageHTML = uploadedImageBase64 ? `<img src="${uploadedImageBase64}" class="preview-img"><br>` : '';
+    let imageHTML = uploadedImageBase64 ? `<img src="${uploadedImageBase64}" style="max-width: 200px; border-radius: 8px; margin-bottom: 8px;"><br>` : '';
     userMessageRow.innerHTML = `
         <div class="message-content">
             <div class="avatar">U</div>
@@ -64,16 +80,17 @@ async function sendMessage() {
 
     // Eingabe zurücksetzen
     inputField.value = '';
-    document.getElementById('image-preview-bar').style.display = 'none';
-    document.getElementById('send-btn').classList.remove('active');
+    const previewBar = document.getElementById('image-preview-bar');
+    if (previewBar) previewBar.style.display = 'none';
+    document.getElementById('send-btn')?.classList.remove('active');
     
-    // Bot-Antwort Container erstellen (mit Lade-Indikator)
+    // Bot Message Loading Container
     const botMessageRow = document.createElement('div');
     botMessageRow.className = 'message-row bot';
     botMessageRow.innerHTML = `
         <div class="message-content">
             <div class="avatar">A</div>
-            <div class="message-text" id="loading-text"><i>Arnox AI denkt nach...</i></div>
+            <div class="message-text"><i>Arnox AI antwortet...</i></div>
         </div>
     `;
     chatBox.appendChild(botMessageRow);
@@ -82,7 +99,6 @@ async function sendMessage() {
     const botTextElement = botMessageRow.querySelector('.message-text');
 
     try {
-        // Groq API Endpoint (Nutzt das Llama 3.3 70B Modell)
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -92,7 +108,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: 'system', content: 'Du bist Arnox AI, ein hilfreicher, intelligenter Assistent.' },
+                    { role: 'system', content: 'Du bist Arnox AI, ein extrem intelligenter und hilfreicher KI-Assistent.' },
                     { role: 'user', content: userText }
                 ],
                 temperature: 0.7
@@ -101,16 +117,15 @@ async function sendMessage() {
 
         const data = await response.json();
 
-        if (data.choices && data.choices[0]) {
+        if (response.ok && data.choices && data.choices[0]) {
             const aiResponse = data.choices[0].message.content;
             botTextElement.innerHTML = marked.parse(aiResponse);
-        } else if (data.error) {
-            botTextElement.innerHTML = `<span style="color: #ef4444;"><strong>Groq API Fehler:</strong> ${data.error.message}</span>`;
         } else {
-            botTextElement.innerHTML = `<span style="color: #ef4444;">Fehler beim Empfangen der Antwort.</span>`;
+            const errorMsg = data.error ? data.error.message : 'Unbekannter API-Fehler';
+            botTextElement.innerHTML = `<span style="color: #ef4444;"><strong>Fehler:</strong> ${errorMsg}</span>`;
         }
     } catch (err) {
-        botTextElement.innerHTML = `<span style="color: #ef4444;">Netzwerkfehler: Bitte überprüfe deinen API-Key und deine Verbindung.</span>`;
+        botTextElement.innerHTML = `<span style="color: #ef4444;"><strong>Netzwerkfehler:</strong> Die Anfrage konnte nicht gesendet werden.</span>`;
     }
 
     uploadedImageBase64 = null;
