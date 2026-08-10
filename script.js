@@ -1,6 +1,6 @@
 let currentBase64Image = null;
 const conversationHistory = [
-    { role: "system", content: "Du bist Arnox AI, ein intelligenter, moderner Assistent." }
+    { role: "system", content: "Du bist Arnox AI, ein intelligenter, hilfsbereiter KI-Assistent." }
 ];
 
 const userInput = document.getElementById('user-input');
@@ -22,6 +22,12 @@ userInput.addEventListener('keydown', function(e) {
         sendMessage();
     }
 });
+
+function setPrompt(text) {
+    userInput.value = text;
+    userInput.dispatchEvent(new Event('input'));
+    userInput.focus();
+}
 
 function handleFileSelect(event) {
     const file = event.target.files[0];
@@ -46,6 +52,10 @@ async function sendMessage() {
         return;
     }
     if (!messageText && !currentBase64Image) return;
+
+    // Startbildschirm ausblenden, falls vorhanden
+    const hero = document.getElementById('hero-welcome');
+    if (hero) hero.remove();
 
     const userContent = [];
     if (messageText) userContent.push({ type: "text", text: messageText });
